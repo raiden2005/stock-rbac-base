@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock RBAC - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #888;
+            text-align: center;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+        .field {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        input[type=text], input[type=password] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type=text]:focus, input[type=password]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        button:active { transform: translateY(0); }
+        .result {
+            margin-top: 20px;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+        .result.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+        .result.err { background: #ffebee; color: #c62828; display: block; }
+        .tip {
+            margin-top: 18px;
+            padding: 12px 14px;
+            background: #f5f5f7;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.7;
+        }
+        .tip b { color: #333; }
+        .nav {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .user-panel {
+            padding: 16px;
+            background: #f5f7fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .user-panel.show { display: block; }
+        .user-panel p { margin: 4px 0; font-size: 13px; color: #555; }
+        .user-panel .name { color: #333; font-weight: 600; font-size: 16px; }
+        h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock RBAC 认证系统</h1>
+        <p class="subtitle">基于 Spring Boot + JWT + H2</p>
+
+        <div class="user-panel" id="userPanel">
+            <h2>已登录用户</h2>
+            <p class="name" id="loginUserName"></p>
+            <p><b>账号：</b><span id="loginUserAccount"></span></p>
+            <p><b>类型：</b><span id="loginUserType"></span></p>
+            <p><b>GUID：</b><span id="loginUserGuid"></span></p>
+        </div>
+
+        <div id="loginForm">
+            <div class="field">
+                <label>用户账号</label>
+                <input type="text" id="loginAccount" value="admin" autocomplete="username">
+            </div>
+            <div class="field">
+                <label>密码</label>
+                <input type="password" id="loginPassword" value="admin123" autocomplete="current-password">
+            </div>
+            <button onclick="doLogin()">登录</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div class="nav" id="navLinks" style="display:none;">
+            <a href="#" onclick="fetchMe();return false;">查看用户信息</a>
+            <a href="#" onclick="doLogout();return false;">退出登录</a>
+        </div>
+
+        <div class="tip">
+            <b>测试账号：</b><br>
+            管理员：admin / admin123（SUPER_ADMIN）<br>
+            普通用户：user1 / user123（USER）
+        </div>
+    </div>
+
+    <script>
+        const API = '/api/auth';
+
+        function showResult(text, isOk) {
+            const el = document.getElementById('result');
+            el.textContent = text;
+            el.className = 'result ' + (isOk ? 'ok' : 'err');
+        }
+
+        function showUser(data) {
+            document.getElementById('userPanel').classList.add('show');
+            document.getElementById('loginUserName').textContent = data.userName || '-';
+            document.getElementById('loginUserAccount').textContent = data.userAccount || '-';
+            document.getElementById('loginUserType').textContent = data.userType || '-';
+            document.getElementById('loginUserGuid').textContent = data.userGuid || '-';
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('navLinks').style.display = 'block';
+        }
+
+        function doLogin() {
+            const account = document.getElementById('loginAccount').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (!account || !password) {
+                showResult('{"code": 400, "msg": "账号或密码不能为空"}', false);
+                return;
+            }
+            const body = JSON.stringify({
+                userAccount: account,
+                userPwd: password
+            });
+            fetch(API + '/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: body
+            })
+            .then(r => r.json())
+            .then(json => {
+                showResult(JSON.stringify(json, null, 2), json.code === 200);
+                if (json.code === 200 && json.data) {
+                    showUser(json.data);
+                }
+            })
+            .catch(err => showResult('请求失败: ' + err.message, false));
+        }
+
+        function fetchMe() {
+            fetch(API + '/me', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(json => {
+                    showResult(JSON.stringify(json, null, 2), json.code === 200);
+                    if (json.code === 200 && json.data) showUser(json.data);
+                })
+                .catch(err => showResult('请求失败: ' + err.message, false));
+        }
+
+        function doLogout() {
+            fetch(API + '/logout', { method: 'POST', credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(json => {
+                    showResult(JSON.stringify(json, null, 2), json.code === 200);
+                    if (json.code === 200) {
+                        document.getElementById('userPanel').classList.remove('show');
+                        document.getElementById('loginForm').style.display = 'block';
+                        document.getElementById('navLinks').style.display = 'none';
+                    }
+                })
+                .catch(err => showResult('请求失败: ' + err.message, false));
+        }
+
+        // 页面加载时自动检查是否已登录
+        window.addEventListener('load', () => {
+            fetch(API + '/me', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(json => {
+                    if (json.code === 200 && json.data) {
+                        showUser(json.data);
+                        showResult('检测到您已登录', true);
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    session:
+      timeout: 30m
+
+spring:
+  application:
+    name: stock-rbac-base
+  profiles:
+    active: local
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/stock_rbac?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          min-idle: 5
+          max-idle: 20
+          max-active: 30
+          max-wait: 3000ms
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.stock.rbac.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_uuid
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+rbac:
+  jwt:
+    secret: stock-rbac-base-v1.0-jwt-secret-key-please-change-it-in-production
+    expire: 604800
+    header: Authorization
+    prefix: "Bearer "
+  whitelist:
+    - /api/auth/login
+    - /api/auth/logout
+    - /api/health/**
+    - /static/**
+    - /doc.html
+    - /webjars/**
+    - /v3/api-docs/**
+    - /favicon.ico
+  login-page: /login
