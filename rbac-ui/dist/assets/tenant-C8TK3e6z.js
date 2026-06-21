@@ -1,0 +1,1 @@
+import{p as s}from"./index-BypGpuMM.js";const a=()=>s.get("/api/tenant/self/home"),n=()=>s.get("/api/tenant/self/question/quota"),l=t=>s.get("/api/tenant/self/order/sub/list",{params:t}),i=t=>s.get("/api/tenant/self/bill/list",{params:t}),o=t=>s.get("/api/tenant/list",{params:t}),f=t=>s.get("/api/tenant/"+t);export{l as a,i as b,n as c,f as d,o as l,a as s};
