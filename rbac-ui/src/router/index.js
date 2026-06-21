@@ -91,6 +91,18 @@ const routes = [
         name: 'AdminAudit',
         component: () => import('@/views/admin/AuditLog.vue'),
         meta: { title: '审计日志', role: 'admin' }
+      },
+      {
+        path: 'admin/quota',
+        name: 'AdminQuota',
+        component: () => import('@/views/admin/Quota.vue'),
+        meta: { title: '额度管理', role: 'admin' }
+      },
+      {
+        path: 'admin/knowledge',
+        name: 'AdminKnowledge',
+        component: () => import('@/views/admin/Knowledge.vue'),
+        meta: { title: '知识库管理', role: 'admin' }
       }
     ]
   },

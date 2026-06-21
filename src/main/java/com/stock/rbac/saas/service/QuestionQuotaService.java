@@ -120,4 +120,48 @@ public class QuestionQuotaService {
         // 月度重置由按月统计实现：新月份首次提问时自动创建新记录，无需额外操作
         System.out.println("[QuestionQuotaService] 月度重置任务已触发（按月份分表自动生效）");
     }
+
+    /** 查询指定租户指定月份的统计记录（不存在则返回 null） */
+    public SysTenantQuestionStat getStat(String tenantId, String statMonth) {
+        return tenantQuestionStatMapper.selectOne(
+                new LambdaQueryWrapper<SysTenantQuestionStat>()
+                        .eq(SysTenantQuestionStat::getTenantId, tenantId)
+                        .eq(SysTenantQuestionStat::getStatMonth, statMonth)
+                        .last("LIMIT 1"));
+    }
+
+    /** 调整付费存量额度（正数增加，负数减少） */
+    public boolean adjustSurplus(String tenantId, int adjust, String remark) {
+        if (tenantId == null || tenantId.isEmpty()) return false;
+        String month = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        SysTenantQuestionStat stat = getStat(tenantId, month);
+        if (stat == null) {
+            stat = new SysTenantQuestionStat();
+            stat.setTenantId(tenantId);
+            stat.setStatMonth(month);
+            stat.setFreeUseNum(0);
+            stat.setPayUseNum(0);
+            stat.setSurplusPayQuestion(adjust >= 0 ? adjust : 0);
+            tenantQuestionStatMapper.insert(stat);
+        } else {
+            int current = stat.getSurplusPayQuestion() == null ? 0 : stat.getSurplusPayQuestion();
+            int newVal = Math.max(0, current + adjust);
+            stat.setSurplusPayQuestion(newVal);
+            tenantQuestionStatMapper.updateById(stat);
+        }
+        System.out.println("[QuotaAdjust] tenantId=" + tenantId + " adjust=" + adjust + " remark=" + remark);
+        return true;
+    }
+
+    /** 重置当月免费额度使用数为 0 */
+    public boolean resetFreeUse(String tenantId) {
+        if (tenantId == null || tenantId.isEmpty()) return false;
+        String month = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        SysTenantQuestionStat stat = getStat(tenantId, month);
+        if (stat == null) return false;
+        stat.setFreeUseNum(0);
+        tenantQuestionStatMapper.updateById(stat);
+        System.out.println("[QuotaReset] tenantId=" + tenantId + " freeUseNum reset to 0");
+        return true;
+    }
 }

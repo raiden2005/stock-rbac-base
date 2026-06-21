@@ -7,10 +7,12 @@ export const useUserStore = defineStore('user', {
     userInfo: {}
   }),
   getters: {
-    isLogged: (state) => !!state.token,
-    isAdmin: (state) => state.userInfo.userType === 'SUPER_ADMIN',
-    userGuid: (state) => state.userInfo.userGuid || '',
-    tenantId: (state) => state.userInfo.tenantId || ''
+    // 登录态：只要有 userGuid 即视为已登录（本项目后端未返回 token）
+    isLogged: (state) => !!state.userInfo?.userGuid,
+    // 管理员判断：兼容 userType === 'admin' 或 roles 数组中含 SUPER_ADMIN
+    isAdmin: (state) => state.userInfo?.userType === 'admin' || (state.userInfo?.roles || []).includes('SUPER_ADMIN'),
+    userGuid: (state) => state.userInfo?.userGuid || '',
+    tenantId: (state) => state.userInfo?.tenantId || ''
   },
   actions: {
     setToken(token) { this.token = token },

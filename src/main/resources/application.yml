@@ -58,3 +58,36 @@ rbac:
     - /v3/api-docs/**
     - /favicon.ico
   login-page: /login
+
+# ============================================================
+# Milvus向量数据库配置
+# ============================================================
+milvus:
+  host: 127.0.0.1
+  port: 19530
+  collection-name: stock_private_knowledge
+  dimension: 1024
+  similarity-threshold: 0.7
+  top-n: 5
+  connect-timeout: 10
+  enabled: true
+
+# ============================================================
+# Embedding向量化服务配置
+# ============================================================
+embedding:
+  api:
+    url: http://127.0.0.1:8001/v1/embeddings
+    key: ""
+    model: text-embedding-ada-002
+  dimension: 1024
+
+# ============================================================
+# LLM大语言模型API配置
+# ============================================================
+llm:
+  api:
+    url: http://127.0.0.1:8000/v1/chat/completions
+    key: ""
+    model: gpt-3.5-turbo
+    timeout: 30000

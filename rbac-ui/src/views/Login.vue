@@ -49,11 +49,11 @@ const handleLogin = async () => {
       try {
         await userStore.login(form)
         ElMessage.success('登录成功')
-        const role = userStore.userInfo?.role
-        if (role === 'admin') {
-          router.push('/admin/home')
+        // 使用 Pinia getter isAdmin 判断角色并跳转
+        if (userStore.isAdmin) {
+          router.replace('/admin/home')
         } else {
-          router.push('/user/home')
+          router.replace('/user/home')
         }
       } catch (error) {
         ElMessage.error(error.message || '登录失败')

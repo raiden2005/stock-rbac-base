@@ -31,6 +31,12 @@ public class SysQuestion {
     /** 回复内容（当前为占位回答） */
     private String replyContent;
 
+    /** RAG引用的知识溯源(JSON格式) */
+    private String referenceKnowledge;
+
+    /** RAG完整增强Prompt(调试用) */
+    private String fullRagPrompt;
+
     /** 状态：0-等待回复 1-已回复 */
     private Integer status;
 
@@ -66,6 +72,12 @@ public class SysQuestion {
 
     public String getReplyContent() { return replyContent; }
     public void setReplyContent(String replyContent) { this.replyContent = replyContent; }
+
+    public String getReferenceKnowledge() { return referenceKnowledge; }
+    public void setReferenceKnowledge(String referenceKnowledge) { this.referenceKnowledge = referenceKnowledge; }
+
+    public String getFullRagPrompt() { return fullRagPrompt; }
+    public void setFullRagPrompt(String fullRagPrompt) { this.fullRagPrompt = fullRagPrompt; }
 
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }

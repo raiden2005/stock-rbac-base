@@ -38,11 +38,13 @@
           </template>
           <el-menu-item index="/admin/home">运营仪表盘</el-menu-item>
           <el-menu-item index="/admin/tenant">租户管理</el-menu-item>
+          <el-menu-item index="/admin/quota">额度管理</el-menu-item>
           <el-menu-item index="/admin/plan">套餐配置</el-menu-item>
           <el-menu-item index="/admin/order/sub">订阅订单</el-menu-item>
           <el-menu-item index="/admin/order/question">提问订单</el-menu-item>
           <el-menu-item index="/admin/bill">账单记录</el-menu-item>
           <el-menu-item index="/admin/question">问题列表</el-menu-item>
+          <el-menu-item index="/admin/knowledge">知识库管理</el-menu-item>
           <el-menu-item index="/admin/audit">审计日志</el-menu-item>
         </el-sub-menu>
       </el-menu>
