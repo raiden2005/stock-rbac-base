@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock RBAC - 登录</title>
+    <title>Stock RBAC SaaS 平台</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* ========== 登录页面 ========== */
+        .login-wrapper {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
         }
-        .container {
+        .login-card {
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
@@ -23,230 +30,887 @@
             width: 100%;
             max-width: 420px;
         }
-        h1 {
+        .login-card h1 {
             color: #333;
             text-align: center;
             margin-bottom: 8px;
             font-size: 24px;
         }
-        .subtitle {
+        .login-card .subtitle {
             color: #888;
             text-align: center;
             margin-bottom: 28px;
             font-size: 14px;
         }
-        .field {
-            margin-bottom: 16px;
-        }
-        label {
+        .field { margin-bottom: 16px; }
+        .field label {
             display: block;
             margin-bottom: 6px;
             color: #555;
             font-size: 13px;
             font-weight: 500;
         }
-        input[type=text], input[type=password] {
+        .field input {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s;
         }
-        input[type=text]:focus, input[type=password]:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-        }
-        button {
-            width: 100%;
-            padding: 12px;
+        .field input:focus { border-color: #667eea; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
             border: none;
             border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            margin-top: 8px;
             transition: transform 0.1s, box-shadow 0.2s;
         }
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        }
-        button:active { transform: translateY(0); }
-        .result {
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .btn.secondary { background: #6c757d; }
+        .btn.secondary:hover { background: #5a6268; box-shadow: 0 4px 12px rgba(108,117,125,0.4); }
+        .btn-block { width: 100%; padding: 12px; margin-top: 8px; }
+        .result-box {
             margin-top: 20px;
             padding: 12px 14px;
             border-radius: 6px;
             font-size: 13px;
-            font-family: "SF Mono", Menlo, Consolas, monospace;
             white-space: pre-wrap;
             word-break: break-all;
             display: none;
         }
-        .result.ok { background: #e8f5e9; color: #2e7d32; display: block; }
-        .result.err { background: #ffebee; color: #c62828; display: block; }
+        .result-box.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+        .result-box.err { background: #ffebee; color: #c62828; display: block; }
         .tip {
-            margin-top: 18px;
+            margin-top: 20px;
             padding: 12px 14px;
             background: #f5f5f7;
             border-radius: 6px;
             font-size: 12px;
             color: #666;
-            line-height: 1.7;
+            line-height: 1.8;
         }
         .tip b { color: #333; }
-        .nav {
-            margin-top: 18px;
-            text-align: center;
-            font-size: 13px;
+
+        /* ========== 主应用容器 ========== */
+        .app { display: none; min-height: 100vh; }
+        .app.show { display: block; }
+        .app-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .nav a {
-            color: #667eea;
-            text-decoration: none;
-            margin: 0 8px;
+        .app-header .logo { font-size: 18px; font-weight: 600; }
+        .user-info { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        .user-info .role-badge {
+            padding: 3px 10px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 12px;
+            font-size: 12px;
         }
-        .nav a:hover { text-decoration: underline; }
-        .user-panel {
-            padding: 16px;
-            background: #f5f7fa;
-            border-radius: 8px;
+        .app-content { padding: 30px; max-width: 1400px; margin: 0 auto; }
+        .page-title {
+            font-size: 22px;
+            font-weight: 600;
             margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .page-title .hint {
+            font-size: 13px;
+            font-weight: 400;
+            color: #888;
+            margin-left: 10px;
+        }
+
+        /* ========== 统计卡片 ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+        .stat-card .value { font-size: 26px; font-weight: 700; color: #2c3e50; }
+        .stat-card.green { border-left-color: #52c41a; }
+        .stat-card.orange { border-left-color: #fa8c16; }
+        .stat-card.red { border-left-color: #f5222d; }
+        .stat-card.purple { border-left-color: #722ed1; }
+        .stat-card .unit { font-size: 14px; color: #888; font-weight: 400; margin-left: 4px; }
+
+        /* ========== 面板/表格 ========== */
+        .panel {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .panel h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel h3 .btn-small {
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 400;
+        }
+        .info-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: #888; width: 140px; flex-shrink: 0; }
+        .info-row .value { color: #333; flex: 1; }
+        .info-row .value b { color: #667eea; }
+        .info-row .value .warn { color: #fa8c16; font-weight: 600; }
+        .info-row .value .ok { color: #52c41a; font-weight: 600; }
+
+        /* ========== Hero 提问区（最高频刚需，最显著） ========== */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 32px 36px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 200px; height: 200px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: 20%;
+            width: 160px; height: 160px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 50%;
+        }
+        .hero-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .hero-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 20px;
+        }
+        /* Hero 内的额度指示条 */
+        .quota-strip {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .quota-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #fff;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .quota-chip strong { font-size: 16px; font-weight: 700; }
+        .quota-chip.warn strong { color: #ffe066; }
+        /* Hero 内的表单 */
+        .hero-form { position: relative; z-index: 1; }
+        .hero-form .form-row { margin-bottom: 10px; }
+        .hero-form .form-row label {
+            display: block;
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .hero-form input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            font-size: 15px;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .hero-form input[type="text"]:focus {
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
+        .hero-form textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            resize: vertical;
+            min-height: 100px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .hero-form textarea:focus {
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
+        .hero-form .btn-hero {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            background: #fff;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+        }
+        .hero-form .btn-hero:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+        .hero-form .btn-hero:active { transform: translateY(0); }
+        .hero-result {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: pre-wrap;
             display: none;
         }
-        .user-panel.show { display: block; }
-        .user-panel p { margin: 4px 0; font-size: 13px; color: #555; }
-        .user-panel .name { color: #333; font-weight: 600; font-size: 16px; }
-        h2 {
-            font-size: 16px;
+        .hero-result.ok { background: rgba(82,196,26,0.2); color: #d9f7be; display: block; border: 1px solid rgba(82,196,26,0.4); }
+        .hero-result.err { background: rgba(250,140,22,0.2); color: #ffd591; display: block; border: 1px solid rgba(250,140,22,0.4); }
+
+        /* ========== 表格 ========== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            background: #fafafa;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        tbody td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f0f0f0;
             color: #333;
-            margin-bottom: 10px;
+        }
+        tbody tr:hover { background: #fafbff; }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .tag.green { background: #f6ffed; color: #52c41a; }
+        .tag.red { background: #fff1f0; color: #f5222d; }
+        .tag.orange { background: #fff7e6; color: #fa8c16; }
+        .tag.blue { background: #e6f7ff; color: #1890ff; }
+        .tag.gray { background: #fafafa; color: #888; }
+
+        /* ========== 进度条（额度） ========== */
+        .quota-bar {
+            background: #f0f0f0;
+            border-radius: 6px;
+            height: 10px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .quota-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        .quota-bar .fill.warn { background: linear-gradient(90deg, #fa8c16, #f5222d); }
+
+        /* 双栏布局 */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .two-col { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Stock RBAC 认证系统</h1>
-        <p class="subtitle">基于 Spring Boot + JWT + H2</p>
 
-        <div class="user-panel" id="userPanel">
-            <h2>已登录用户</h2>
-            <p class="name" id="loginUserName"></p>
-            <p><b>账号：</b><span id="loginUserAccount"></span></p>
-            <p><b>类型：</b><span id="loginUserType"></span></p>
-            <p><b>GUID：</b><span id="loginUserGuid"></span></p>
+<!-- ============ 登录页面 ============ -->
+<div class="login-wrapper" id="loginPage">
+    <div class="login-card">
+        <h1>Stock RBAC SaaS 平台</h1>
+        <p class="subtitle">基于 Spring Boot + MyBatis + H2</p>
+        <div class="field">
+            <label>用户账号</label>
+            <input type="text" id="loginAccount" value="admin" autocomplete="username">
         </div>
-
-        <div id="loginForm">
-            <div class="field">
-                <label>用户账号</label>
-                <input type="text" id="loginAccount" value="admin" autocomplete="username">
-            </div>
-            <div class="field">
-                <label>密码</label>
-                <input type="password" id="loginPassword" value="admin123" autocomplete="current-password">
-            </div>
-            <button onclick="doLogin()">登录</button>
+        <div class="field">
+            <label>密码</label>
+            <input type="password" id="loginPassword" value="admin123" autocomplete="current-password">
         </div>
-
-        <div class="result" id="result"></div>
-
-        <div class="nav" id="navLinks" style="display:none;">
-            <a href="#" onclick="fetchMe();return false;">查看用户信息</a>
-            <a href="#" onclick="doLogout();return false;">退出登录</a>
-        </div>
-
+        <button class="btn btn-block" onclick="doLogin()">登录</button>
+        <div class="result-box" id="loginResult"></div>
         <div class="tip">
             <b>测试账号：</b><br>
-            管理员：admin / admin123（SUPER_ADMIN）<br>
-            普通用户：user1 / user123（USER）
+            管理员：admin / admin123（SUPER_ADMIN，查看运营数据）<br>
+            普通用户：user1 / user123（USER，提交问题、查看额度）
         </div>
     </div>
+</div>
 
-    <script>
-        const API = '/api/auth';
+<!-- ============ 主应用 ============ -->
+<div class="app" id="appPage">
+    <div class="app-header">
+        <div class="logo">📊 Stock RBAC SaaS 平台</div>
+        <div class="user-info">
+            <span id="appUserName">--</span>
+            <span class="role-badge" id="appRoleBadge">--</span>
+            <button class="btn secondary" onclick="doLogout()">退出</button>
+        </div>
+    </div>
+    <div class="app-content" id="appContent">
+        <!-- 动态内容 -->
+    </div>
+</div>
 
-        function showResult(text, isOk) {
-            const el = document.getElementById('result');
-            el.textContent = text;
-            el.className = 'result ' + (isOk ? 'ok' : 'err');
+<script>
+    const API = '/api';
+    let currentUser = null;
+
+    // ============ 通用 HTTP 工具 ============
+    function showResult(el, text, isOk) {
+        const e = document.getElementById(el);
+        e.textContent = text;
+        e.className = 'result-box ' + (isOk ? 'ok' : 'err');
+    }
+    async function http(url, options) {
+        const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        return await res.json();
+    }
+    async function httpGet(url) { return await http(url); }
+    async function httpPost(url, body) {
+        return await http(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        });
+    }
+
+    // ============ 登录/退出 ============
+    async function doLogin() {
+        const account = document.getElementById('loginAccount').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        if (!account || !password) {
+            showResult('loginResult', '请输入账号和密码', false);
+            return;
         }
-
-        function showUser(data) {
-            document.getElementById('userPanel').classList.add('show');
-            document.getElementById('loginUserName').textContent = data.userName || '-';
-            document.getElementById('loginUserAccount').textContent = data.userAccount || '-';
-            document.getElementById('loginUserType').textContent = data.userType || '-';
-            document.getElementById('loginUserGuid').textContent = data.userGuid || '-';
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('navLinks').style.display = 'block';
+        try {
+            const json = await httpPost(API + '/auth/login', { userAccount: account, userPwd: password });
+            if (json.code === 200 && json.data) {
+                currentUser = json.data;
+                showResult('loginResult', '登录成功，正在跳转...', true);
+                setTimeout(showApp, 400);
+            } else {
+                showResult('loginResult', '登录失败：' + (json.msg || '未知错误'), false);
+            }
+        } catch (e) {
+            showResult('loginResult', '网络错误：' + e.message, false);
         }
+    }
 
-        function doLogin() {
-            const account = document.getElementById('loginAccount').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            if (!account || !password) {
-                showResult('{"code": 400, "msg": "账号或密码不能为空"}', false);
+    async function doLogout() {
+        try { await httpPost(API + '/auth/logout'); } catch (e) {}
+        currentUser = null;
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('appPage').classList.remove('show');
+        window.location.reload();
+    }
+
+    // ============ 进入主应用 ============
+    function showApp() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('appPage').classList.add('show');
+        const name = currentUser.userName || currentUser.userAccount;
+        document.getElementById('appUserName').textContent = name + '（' + currentUser.userAccount + '）';
+
+        // 判断是否为管理员：userType=admin 或 roles 中包含 ADMIN
+        let isAdmin = false;
+        if (currentUser.userType && String(currentUser.userType).toLowerCase().indexOf('admin') >= 0) isAdmin = true;
+        if (currentUser.roles && Array.isArray(currentUser.roles)) {
+            for (let i = 0; i < currentUser.roles.length; i++) {
+                if (String(currentUser.roles[i]).toUpperCase().indexOf('ADMIN') >= 0) isAdmin = true;
+            }
+        }
+        document.getElementById('appRoleBadge').textContent = isAdmin ? '管理员' : '普通用户';
+        if (isAdmin) {
+            loadAdminDashboard();
+        } else {
+            loadUserHome();
+        }
+    }
+
+    // ============ 管理员仪表盘 ============
+    async function loadAdminDashboard() {
+        const content = document.getElementById('appContent');
+        content.innerHTML = `
+            <h2 class="page-title">📊 运营数据总览 <span class="hint">实时统计</span></h2>
+            <div id="statCards" class="stats-grid"><div class="empty-state">加载中...</div></div>
+            <h2 class="page-title" style="margin-top:30px;">📈 提问数据</h2>
+            <div id="questionStat" class="panel"><div class="empty-state">加载中...</div></div>
+            <h2 class="page-title" style="margin-top:30px;">💼 增值订单（最近10条）</h2>
+            <div id="questionOrderList" class="panel"><div class="empty-state">加载中...</div></div>
+            <h2 class="page-title" style="margin-top:30px;">📋 订阅订单（最近10条）</h2>
+            <div id="subOrderList" class="panel"><div class="empty-state">加载中...</div></div>
+        `;
+
+        // 并行加载多个接口
+        Promise.all([
+            httpGet(API + '/stat/home'),
+            httpGet(API + '/stat/question/overview'),
+            httpGet(API + '/order/question/platform/list?pageNum=1&pageSize=10'),
+            httpGet(API + '/order/sub/platform/list?pageNum=1&pageSize=10')
+        ]).then(results => {
+            const [stat, qStat, qOrders, sOrders] = results;
+            renderStatCards(stat);
+            renderQuestionStat(qStat);
+            renderQuestionOrderList(qOrders);
+            renderSubOrderList(sOrders);
+        });
+    }
+
+    function renderStatCards(stat) {
+        if (!stat || !stat.data) return;
+        const d = stat.data;
+        const cardHtml = [
+            { label: '总租户数', value: d.totalTenants, cls: '' },
+            { label: '活跃租户', value: d.activeTenants, cls: 'green' },
+            { label: '即将到期（<30天）', value: d.expiringTenants, cls: 'orange' },
+            { label: '订阅总收入', value: d.subscriptionRevenueTotal, unit: '元', cls: 'purple' },
+            { label: '提问订单收入', value: d.questionRevenueTotal, unit: '元', cls: '' },
+            { label: '平台总收入', value: d.totalRevenueTotal || (Number(d.subscriptionRevenueTotal || 0) + Number(d.questionRevenueTotal || 0)), unit: '元', cls: 'green' }
+        ].map(c => `
+            <div class="stat-card ${c.cls}">
+                <div class="label">${c.label}</div>
+                <div class="value">${c.value == null ? 0 : c.value}${c.unit ? '<span class="unit">' + c.unit + '</span>' : ''}</div>
+            </div>
+        `).join('');
+        document.getElementById('statCards').innerHTML = cardHtml;
+    }
+
+    function renderQuestionStat(qStat) {
+        if (!qStat || !qStat.data) return;
+        const d = qStat.data;
+        const html = `
+            <table>
+                <thead><tr><th>指标</th><th>数值</th></tr></thead>
+                <tbody>
+                    <tr><td>总提问次数</td><td><b>${d.totalQuestions || 0}</b></td></tr>
+                    <tr><td>免费额度使用</td><td>${d.freeUsedTotal || 0} 次</td></tr>
+                    <tr><td>付费额度使用</td><td>${d.paidUsedTotal || 0} 次</td></tr>
+                    <tr><td>剩余付费存量</td><td><span class="tag green">${d.surplusPayTotal || 0} 次</span></td></tr>
+                    <tr><td>付费订单数</td><td>${d.paidOrderCount || 0} 笔</td></tr>
+                    <tr><td>付费订单累计收入</td><td><b>¥ ${d.paidRevenueTotal || 0}</b></td></tr>
+                </tbody>
+            </table>
+        `;
+        document.getElementById('questionStat').innerHTML = html;
+    }
+
+    function renderQuestionOrderList(resp) {
+        const rows = resp && resp.data && resp.data.records ? resp.data.records : [];
+        if (rows.length === 0) {
+            document.getElementById('questionOrderList').innerHTML = '<div class="empty-state">暂无订单数据</div>';
+            return;
+        }
+        let html = `<table><thead><tr>
+            <th>订单ID</th><th>租户ID</th><th>购买题目数</th><th>单价</th><th>金额</th>
+            <th>状态</th><th>支付时间</th></tr></thead><tbody>`;
+        for (let r of rows) {
+            const statusTag = r.orderStatus === 1 ? '<span class="tag green">已支付</span>'
+                : r.orderStatus === 0 ? '<span class="tag orange">待支付</span>'
+                : '<span class="tag gray">已取消</span>';
+            html += `<tr>
+                <td>${r.id}</td>
+                <td>${r.tenantId}</td>
+                <td>${r.buyQuestionNum}</td>
+                <td>¥ ${r.unitPrice}</td>
+                <td><b>¥ ${r.totalAmount}</b></td>
+                <td>${statusTag}</td>
+                <td>${r.payTime || '-'}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('questionOrderList').innerHTML = html;
+    }
+
+    function renderSubOrderList(resp) {
+        const rows = resp && resp.data && resp.data.records ? resp.data.records : [];
+        if (rows.length === 0) {
+            document.getElementById('subOrderList').innerHTML = '<div class="empty-state">暂无订单数据</div>';
+            return;
+        }
+        let html = `<table><thead><tr>
+            <th>订单ID</th><th>租户ID</th><th>订阅年数</th><th>金额</th><th>状态</th><th>支付时间</th></tr></thead><tbody>`;
+        for (let r of rows) {
+            const statusTag = r.orderStatus === 1 ? '<span class="tag green">已支付</span>'
+                : r.orderStatus === 0 ? '<span class="tag orange">待支付</span>'
+                : '<span class="tag gray">已取消</span>';
+            html += `<tr>
+                <td>${r.id}</td>
+                <td>${r.tenantId}</td>
+                <td>${r.subscribeYear} 年</td>
+                <td><b>¥ ${r.totalAmount}</b></td>
+                <td>${statusTag}</td>
+                <td>${r.payTime || '-'}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('subOrderList').innerHTML = html;
+    }
+
+    // ============ 用户首页 ============
+    async function loadUserHome() {
+        const content = document.getElementById('appContent');
+        content.innerHTML = `
+            <div id="homeLoading" style="text-align:center;padding:40px;color:#888;">🔄 正在加载您的信息...</div>
+        `;
+        try {
+            const home = await httpGet(API + '/tenant/self/home');
+            if (home.code !== 200 || !home.data) {
+                content.innerHTML = '<div class="panel"><div class="empty-state">加载失败：' + (home.msg || '未知错误') + '</div></div>';
                 return;
             }
-            const body = JSON.stringify({
-                userAccount: account,
-                userPwd: password
-            });
-            fetch(API + '/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: body
-            })
+            renderUserHome(home.data);
+        } catch (e) {
+            content.innerHTML = '<div class="panel"><div class="empty-state">网络错误：' + e.message + '</div></div>';
+        }
+    }
+
+    function renderUserHome(data) {
+        const content = document.getElementById('appContent');
+        const tenant = data.tenant || {};
+        const plan = data.plan || {};
+        const quota = data.quota || {};
+        const subscription = data.subscription || {};
+
+        const freeUsed = Number(quota.freeUsed) || 0;
+        const freeTotal = Number(quota.monthlyFreeTotal) || 3;
+        const freeRemain = Math.max(0, freeTotal - freeUsed);
+        const paySurplus = Number(quota.surplusPay) || 0;
+        const totalRemain = freeRemain + paySurplus;
+
+        const remainingDays = tenant.remainingDays;
+        const expireHint = tenant.expireHint || '';
+        const expireTag = remainingDays != null && remainingDays < 0
+            ? '<span class="tag red">已到期</span>'
+            : remainingDays != null && remainingDays < 30
+                ? '<span class="tag orange">' + remainingDays + ' 天后到期</span>'
+                : '<span class="tag green">正常</span>';
+
+        // ====== Hero 提问区（最高频，最显著） ======
+        const heroSection = `
+            <div class="hero-section">
+                <div class="hero-title">💬 提交您的问题</div>
+                <div class="hero-sub">股票分析 | 行情咨询 | 投资建议 · 本月优先消耗免费额度</div>
+
+                <!-- 额度实时指示 -->
+                <div class="quota-strip">
+                    <div class="quota-chip ${freeRemain === 0 ? 'warn' : ''}">
+                        🆓 本月免费剩余 <strong>${freeRemain}</strong> / ${freeTotal} 次
+                    </div>
+                    <div class="quota-chip">
+                        💎 付费存量 <strong>${paySurplus}</strong> 次
+                    </div>
+                    <div class="quota-chip" style="background:rgba(82,196,26,0.3);border-color:rgba(82,196,26,0.5)">
+                        合计可用 <strong>${totalRemain}</strong> 次
+                    </div>
+                </div>
+
+                <!-- 提问表单 -->
+                <div class="hero-form">
+                    <div class="form-row">
+                        <input type="text" id="qTitle" placeholder="简短描述您的问题，例如：请问宁德时代近期走势如何？">
+                    </div>
+                    <div class="form-row">
+                        <textarea id="qContent" placeholder="详细描述您的问题内容，越具体越容易获得准确的分析结果..."></textarea>
+                    </div>
+                    <button class="btn-hero" onclick="submitQuestion()">🚀 提交问题</button>
+                </div>
+                <div class="hero-result" id="submitResult"></div>
+            </div>
+        `;
+
+        // ====== 额度快览卡片（次要信息，卡片化） ======
+        const quotaCards = `
+            <div class="stats-grid" style="margin-bottom:24px;">
+                <div class="stat-card ${freeRemain === 0 ? 'orange' : 'green'}">
+                    <div class="label">🆓 本月免费额度</div>
+                    <div class="value">${freeRemain} <span class="unit">/ ${freeTotal} 次</span></div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="label">💎 付费存量</div>
+                    <div class="value">${paySurplus} <span class="unit">次</span></div>
+                </div>
+                <div class="stat-card ${remainingDays != null && remainingDays < 30 ? 'orange' : ''}">
+                    <div class="label">📅 套餐有效期</div>
+                    <div class="value">${remainingDays != null ? remainingDays : '—'} <span class="unit">天</span></div>
+                </div>
+                <div class="stat-card ${subscription.hasActiveSubscription ? 'green' : 'orange'}">
+                    <div class="label">💳 订阅状态</div>
+                    <div class="value" style="font-size:16px;">${subscription.hasActiveSubscription ? '✅ 已订阅' : '⚠️ 试用中'}</div>
+                </div>
+            </div>
+        `;
+
+        // ====== 最近提问列表 ======
+        let recentQuestions = data.recentQuestions || [];
+        let qListHtml = '';
+        if (recentQuestions.length === 0) {
+            qListHtml = `
+                <div class="panel">
+                    <h3>📝 我的提问记录 <button class="btn btn-small" onclick="loadUserHome()">🔄 刷新</button></h3>
+                    <div class="empty-state">暂无提问记录，立即在上方提交您的问题吧！</div>
+                </div>`;
+        } else {
+            qListHtml = `
+                <div class="panel">
+                    <h3>📝 我的提问记录（共 ${data.totalQuestions || 0} 条）<button class="btn btn-small" onclick="loadUserHome()">🔄 刷新</button></h3>
+                    <table>
+                        <thead><tr><th>标题</th><th>提交时间</th><th>回复状态</th><th>额度类型</th><th>操作</th></tr></thead>
+                        <tbody>`;
+            for (let q of recentQuestions) {
+                qListHtml += `<tr>
+                    <td><a href="javascript:void(0)" onclick="viewQuestion('${q.id}')" style="color:#667eea;font-weight:500;">${q.title || '(无标题)'}</a></td>
+                    <td>${q.createTime ? q.createTime.substring(0, 16).replace('T', ' ') : '-'}</td>
+                    <td>${q.status === 1 ? '<span class="tag green">✅ 已回复</span>' : '<span class="tag orange">⏳ 待回复</span>'}</td>
+                    <td>${q.payType === 1 ? '<span class="tag blue">付费</span>' : '<span class="tag gray">免费</span>'}</td>
+                    <td><a href="javascript:void(0)" onclick="viewQuestion('${q.id}')" class="tag blue" style="text-decoration:none;cursor:pointer;">查看</a></td>
+                </tr>`;
+            }
+            qListHtml += '</tbody></table></div>';
+        }
+
+        // ====== 订阅信息 & 租户信息（底部折叠） ======
+        const subTenantHtml = `
+            <div class="two-col" style="margin-top:0;">
+                <div class="panel">
+                    <h3>💳 订阅信息</h3>
+                    <div class="info-row"><div class="label">订阅状态</div><div class="value">${subscription.hasActiveSubscription ? '<span class="tag green">已订阅</span>' : '<span class="tag orange">未订阅（试用中）</span>'}</div></div>
+                    <div class="info-row"><div class="label">订阅年数</div><div class="value">${subscription.subscribeYear || 0} 年</div></div>
+                    <div class="info-row"><div class="label">最近支付</div><div class="value">${subscription.totalAmount ? '¥ ' + subscription.totalAmount : '-'}</div></div>
+                    <div class="info-row"><div class="label">支付时间</div><div class="value">${subscription.payTime ? subscription.payTime.substring(0, 16).replace('T', ' ') : '-'}</div></div>
+                    <div class="info-row"><div class="label">套餐价格</div><div class="value"><b>¥ ${plan.yearSubPrice || '-'}</b> / 年</div></div>
+                    <div class="info-row"><div class="label">超额单价</div><div class="value">¥ ${plan.overQuestionUnitPrice || '-'} / 次</div></div>
+                </div>
+                <div class="panel">
+                    <h3>👤 租户信息</h3>
+                    <div class="info-row"><div class="label">租户名称</div><div class="value"><b>${tenant.tenantName || '-'}</b></div></div>
+                    <div class="info-row"><div class="label">租户代码</div><div class="value">${tenant.tenantCode || '-'}</div></div>
+                    <div class="info-row"><div class="label">套餐类型</div><div class="value"><b>${plan.planType || 'STANDARD'}</b></div></div>
+                    <div class="info-row"><div class="label">有效期状态</div><div class="value">${expireTag} ${expireHint ? '<span class="warn">' + expireHint + '</span>' : ''}</div></div>
+                    <div class="info-row"><div class="label">有效期范围</div><div class="value">${tenant.validStart ? tenant.validStart.substring(0, 10) : '-'} ~ ${tenant.validEnd ? tenant.validEnd.substring(0, 10) : '-'}</div></div>
+                    <div class="info-row"><div class="label">联系人</div><div class="value">${tenant.contactPerson || '-'} ${tenant.contactPhone ? '· ' + tenant.contactPhone : ''}</div></div>
+                </div>
+            </div>
+        `;
+
+        // ====== 组装最终页面（Hero 最优先） ======
+        content.innerHTML = `
+            <h2 class="page-title">👋 您好，${currentUser.userName || currentUser.userAccount}！欢迎回来 👋</h2>
+
+            <!-- ① Hero 提问区（最高频刚需，最显著） -->
+            ${heroSection}
+
+            <!-- ② 额度快览卡片 -->
+            ${quotaCards}
+
+            <!-- ③ 最近提问列表 -->
+            ${qListHtml}
+
+            <!-- ④ 订阅 & 租户信息 -->
+            ${subTenantHtml}
+        `;
+
+        // 异步加载订阅订单与账单
+        Promise.all([
+            httpGet(API + '/tenant/self/order/sub/list?pageNum=1&pageSize=5'),
+            httpGet(API + '/tenant/self/bill/list?pageNum=1&pageSize=5')
+        ]).then(results => {
+            renderMySubOrders(results[0]);
+            renderMyBills(results[1]);
+        });
+    }
+
+    function renderMySubOrders(resp) {
+        const rows = resp && resp.data && resp.data.records ? resp.data.records : [];
+        if (rows.length === 0) {
+            document.getElementById('mySubOrders').innerHTML = '<div class="empty-state">暂无订阅订单</div>';
+            return;
+        }
+        let html = `<table><thead><tr><th>订单ID</th><th>订阅年数</th><th>金额</th><th>状态</th><th>支付时间</th></tr></thead><tbody>`;
+        for (let r of rows) {
+            const statusTag = r.orderStatus === 1 ? '<span class="tag green">已支付</span>'
+                : r.orderStatus === 0 ? '<span class="tag orange">待支付</span>'
+                : '<span class="tag gray">已取消</span>';
+            html += `<tr>
+                <td>${r.id}</td>
+                <td>${r.subscribeYear} 年</td>
+                <td>¥ ${r.totalAmount}</td>
+                <td>${statusTag}</td>
+                <td>${r.payTime || '-'}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('mySubOrders').innerHTML = html;
+    }
+
+    function renderMyBills(resp) {
+        const rows = resp && resp.data && resp.data.records ? resp.data.records : [];
+        if (rows.length === 0) {
+            document.getElementById('myBills').innerHTML = '<div class="empty-state">暂无账单记录</div>';
+            return;
+        }
+        let html = `<table><thead><tr><th>账单ID</th><th>订单类型</th><th>金额</th><th>账单月份</th><th>生成时间</th></tr></thead><tbody>`;
+        for (let r of rows) {
+            html += `<tr>
+                <td>${r.id}</td>
+                <td>${r.billType || '-'}</td>
+                <td>¥ ${r.billAmount || r.totalAmount || '-'}</td>
+                <td>${r.statMonth || '-'}</td>
+                <td>${r.createTime || '-'}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('myBills').innerHTML = html;
+    }
+
+    // ============ 提交问题 ============
+    async function submitQuestion() {
+        const title = document.getElementById('qTitle').value.trim();
+        const content = document.getElementById('qContent').value.trim();
+        const resultEl = document.getElementById('submitResult');
+        if (!content || content.length < 2) {
+            resultEl.textContent = '⚠️ 请填写问题内容（至少2个字）';
+            resultEl.className = 'hero-result err';
+            return;
+        }
+        try {
+            const json = await httpPost(API + '/question/submit', { title: title, questionContent: content });
+            if (json.code === 200) {
+                resultEl.textContent = '✅ 提交成功！已自动扣减额度，2 秒后刷新列表...';
+                resultEl.className = 'hero-result ok';
+                document.getElementById('qTitle').value = '';
+                document.getElementById('qContent').value = '';
+                setTimeout(loadUserHome, 2000);
+            } else {
+                resultEl.textContent = '❌ 提交失败：' + (json.msg || '未知错误');
+                resultEl.className = 'hero-result err';
+            }
+        } catch (e) {
+            resultEl.textContent = '🌐 网络错误：' + e.message;
+            resultEl.className = 'hero-result err';
+        }
+    }
+
+    // ============ 查看问题详情 ============
+    async function viewQuestion(id) {
+        const json = await httpGet(API + '/question/' + id);
+        if (json.code !== 200 || !json.data) {
+            alert('加载失败：' + (json.msg || '未知错误'));
+            return;
+        }
+        const q = json.data;
+        const detailHtml = `
+            <div style="max-width:800px;margin:0 auto;">
+                <h2 class="page-title">📄 问题详情</h2>
+                <div class="panel">
+                    <h3>问题 <button class="btn btn-small" onclick="loadUserHome()">← 返回</button></h3>
+                    <div class="info-row"><div class="label">标题</div><div class="value"><b>${q.title || '-'}</b></div></div>
+                    <div class="info-row"><div class="label">提交人</div><div class="value">${q.userAccount || '-'}</div></div>
+                    <div class="info-row"><div class="label">状态</div><div class="value">${q.status === 1 ? '<span class="tag green">已回复</span>' : '<span class="tag orange">待回复</span>'}</div></div>
+                    <div class="info-row"><div class="label">提交时间</div><div class="value">${q.createTime || '-'}</div></div>
+                    <div class="info-row"><div class="label">额度类型</div><div class="value">${q.payType === 1 ? '<span class="tag blue">付费</span>' : '<span class="tag gray">免费</span>'}</div></div>
+                    <div class="info-row"><div class="label" style="vertical-align:top">问题内容</div>
+                        <div class="value" style="white-space:pre-wrap;background:#fafafa;padding:10px;border-radius:6px;line-height:1.7;">${q.questionContent || '-'}</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>💡 回复内容</h3>
+                    <div style="white-space:pre-wrap;background:#f6ffed;padding:16px;border-radius:8px;border-left:4px solid #52c41a;line-height:1.7;">
+${q.replyContent || '（暂无回复内容）'}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('appContent').innerHTML = detailHtml;
+    }
+
+    // ============ 页面初始化：检查是否已登录 ============
+    window.addEventListener('load', () => {
+        fetch(API + '/auth/me', { credentials: 'same-origin' })
             .then(r => r.json())
             .then(json => {
-                showResult(JSON.stringify(json, null, 2), json.code === 200);
                 if (json.code === 200 && json.data) {
-                    showUser(json.data);
+                    currentUser = json.data;
+                    showApp();
                 }
-            })
-            .catch(err => showResult('请求失败: ' + err.message, false));
-        }
+            }).catch(() => {});
+    });
+</script>
 
-        function fetchMe() {
-            fetch(API + '/me', { credentials: 'same-origin' })
-                .then(r => r.json())
-                .then(json => {
-                    showResult(JSON.stringify(json, null, 2), json.code === 200);
-                    if (json.code === 200 && json.data) showUser(json.data);
-                })
-                .catch(err => showResult('请求失败: ' + err.message, false));
-        }
-
-        function doLogout() {
-            fetch(API + '/logout', { method: 'POST', credentials: 'same-origin' })
-                .then(r => r.json())
-                .then(json => {
-                    showResult(JSON.stringify(json, null, 2), json.code === 200);
-                    if (json.code === 200) {
-                        document.getElementById('userPanel').classList.remove('show');
-                        document.getElementById('loginForm').style.display = 'block';
-                        document.getElementById('navLinks').style.display = 'none';
-                    }
-                })
-                .catch(err => showResult('请求失败: ' + err.message, false));
-        }
-
-        // 页面加载时自动检查是否已登录
-        window.addEventListener('load', () => {
-            fetch(API + '/me', { credentials: 'same-origin' })
-                .then(r => r.json())
-                .then(json => {
-                    if (json.code === 200 && json.data) {
-                        showUser(json.data);
-                        showResult('检测到您已登录', true);
-                    }
-                })
-                .catch(() => {});
-        });
-    </script>
 </body>
 </html>

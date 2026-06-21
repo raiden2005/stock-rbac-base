@@ -15,6 +15,7 @@ public class UserContext {
     private static final String KEY_USER_TYPE = "userType";
     private static final String KEY_ROLES = "roles";
     private static final String KEY_PERM_CODES = "permCodes";
+    private static final String KEY_TENANT_ID = "tenantId";
 
     private UserContext() {
     }
@@ -98,6 +99,15 @@ public class UserContext {
 
     public static boolean isLogin() {
         return getUserGuid() != null;
+    }
+
+    public static void setTenantId(String tenantId) {
+        getContext().put(KEY_TENANT_ID, tenantId);
+    }
+
+    public static String getTenantId() {
+        Object value = getContext().get(KEY_TENANT_ID);
+        return value == null ? null : String.valueOf(value);
     }
 
     public static void clear() {

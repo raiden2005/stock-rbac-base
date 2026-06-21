@@ -39,9 +39,10 @@ public class AuditLogAspect {
         logEntry.setLogId(UUID.randomUUID().toString().replace("-", ""));
         logEntry.setOperModule(auditLog.module());
         logEntry.setOperType(auditLog.operation());
-        logEntry.setUserGuid(UserContext.getUserGuid());
-        logEntry.setUserAccount(UserContext.getUserAccount());
-        logEntry.setUserName(UserContext.getUserName());
+
+        String userGuid = UserContext.getUserGuid();
+        String userAccount = UserContext.getUserAccount();
+        String userName = UserContext.getUserName();
 
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes != null) {
@@ -51,9 +52,14 @@ public class AuditLogAspect {
             logEntry.setRequestIp(IpUtil.getClientIp(request));
         }
 
+        // 安全脱敏：日志参数中模糊处理密码字段
         try {
             Object[] args = pjp.getArgs();
             String paramStr = objectMapper.writeValueAsString(args);
+            paramStr = paramStr.replaceAll("\"userPwd\":\"[^\"]*\"", "\"userPwd\":\"***\"")
+                    .replaceAll("\"password\":\"[^\"]*\"", "\"password\":\"***\"")
+                    .replaceAll("\"oldPwd\":\"[^\"]*\"", "\"oldPwd\":\"***\"")
+                    .replaceAll("\"newPwd\":\"[^\"]*\"", "\"newPwd\":\"***\"");
             if (paramStr.length() > 2000) {
                 paramStr = paramStr.substring(0, 2000) + "...";
             }
@@ -64,25 +70,41 @@ public class AuditLogAspect {
         Object result;
         try {
             result = pjp.proceed();
+            // 优先使用方法内绑定的用户信息（如 login 方法），否则使用进入时已有的
+            String newGuid = UserContext.getUserGuid();
+            logEntry.setUserGuid(newGuid != null ? newGuid : userGuid);
+            String newAccount = UserContext.getUserAccount();
+            logEntry.setUserAccount(newAccount != null ? newAccount : userAccount);
+            String newName = UserContext.getUserName();
+            logEntry.setUserName(newName != null ? newName : userName);
             logEntry.setResponseCode(200);
+            logEntry.setOperDesc("操作成功");
         } catch (Throwable t) {
+            // 失败场景：优先使用进入时的用户信息
+            logEntry.setUserGuid(userGuid);
+            logEntry.setUserAccount(userAccount);
+            logEntry.setUserName(userName);
             logEntry.setResponseCode(500);
-            logEntry.setOperDesc("操作失败: " + t.getMessage());
-            try {
-                auditLogMapper.insert(logEntry);
-            } catch (Exception e) {
-                log.warn("审计日志写入失败", e);
+            String msg = t.getMessage();
+            if (msg != null && msg.length() > 500) {
+                msg = msg.substring(0, 500) + "...";
             }
+            logEntry.setOperDesc("操作失败: " + msg);
+            writeLogSafe(logEntry, start);
             throw t;
         }
 
-        logEntry.setExecTime(System.currentTimeMillis() - start);
-        logEntry.setOperDesc("操作成功");
+        writeLogSafe(logEntry, start);
+        return result;
+    }
+
+    private void writeLogSafe(SysAuditLog logEntry, long start) {
         try {
+            logEntry.setExecTime(System.currentTimeMillis() - start);
             auditLogMapper.insert(logEntry);
         } catch (Exception e) {
-            log.warn("审计日志写入失败", e);
+            // 审计日志必须不能阻断主业务流程，只记录 warn
+            log.warn("审计日志写入失败（非阻塞）: {}", e.getMessage());
         }
-        return result;
     }
 }

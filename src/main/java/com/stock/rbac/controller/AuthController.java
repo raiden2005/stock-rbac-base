@@ -20,19 +20,21 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
-    @RequestMapping(value = {"/login"}, method = {RequestMethod.GET, RequestMethod.POST})
+    @PostMapping("/login")
     @AuditLog(module = "认证", operation = "登录")
-    public Result<LoginResponseVO> login(@RequestBody(required = false) LoginRequestVO vo,
-                                         @RequestParam(required = false) String userAccount,
-                                         @RequestParam(required = false) String userPwd,
-                                         HttpServletRequest request) {
-        if (vo == null || vo.getUserAccount() == null) {
-            vo = new LoginRequestVO();
-            vo.setUserAccount(userAccount);
-            vo.setUserPwd(userPwd);
+    public Result<LoginResponseVO> login(@RequestBody LoginRequestVO vo, HttpServletRequest request) {
+        if (vo == null || vo.getUserAccount() == null || vo.getUserAccount().trim().isEmpty()
+                || vo.getUserPwd() == null || vo.getUserPwd().isEmpty()) {
+            return Result.error(400, "账号或密码不能为空");
         }
         LoginResponseVO response = userService.login(vo, request);
         return Result.success(response);
+    }
+
+    @GetMapping("/login")
+    public Result<?> loginHint() {
+        return Result.error(405,
+                "请使用 POST 方式登录，请求体需包含 JSON: {\"userAccount\":\"账号\",\"userPwd\":\"密码\"}");
     }
 
     @RequestMapping(value = {"/logout"}, method = {RequestMethod.GET, RequestMethod.POST})

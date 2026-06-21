@@ -9,12 +9,14 @@ import com.stock.rbac.entity.SysRole;
 import com.stock.rbac.entity.SysRolePermission;
 import com.stock.rbac.entity.SysUser;
 import com.stock.rbac.entity.SysUserRole;
+import com.stock.rbac.entity.SysTenant;
 import com.stock.rbac.exception.BusinessException;
 import com.stock.rbac.mapper.SysPermissionMapper;
 import com.stock.rbac.mapper.SysRoleMapper;
 import com.stock.rbac.mapper.SysRolePermissionMapper;
 import com.stock.rbac.mapper.SysUserMapper;
 import com.stock.rbac.mapper.SysUserRoleMapper;
+import com.stock.rbac.mapper.SysTenantMapper;
 import com.stock.rbac.util.JwtUtil;
 import com.stock.rbac.util.PasswordUtil;
 import com.stock.rbac.util.RbacConfigUtil;
@@ -43,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final SysRoleMapper sysRoleMapper;
     private final SysRolePermissionMapper sysRolePermissionMapper;
     private final SysPermissionMapper sysPermissionMapper;
+    private final SysTenantMapper sysTenantMapper;
     private final LocalCacheConfig.RedisTemplateFallback redisTemplate;
     private final PasswordUtil passwordUtil;
     private final JwtUtil jwtUtil;
@@ -53,6 +56,7 @@ public class UserServiceImpl implements UserService {
                            SysRoleMapper sysRoleMapper,
                            SysRolePermissionMapper sysRolePermissionMapper,
                            SysPermissionMapper sysPermissionMapper,
+                           SysTenantMapper sysTenantMapper,
                            LocalCacheConfig.RedisTemplateFallback redisTemplate,
                            PasswordUtil passwordUtil,
                            JwtUtil jwtUtil,
@@ -62,6 +66,7 @@ public class UserServiceImpl implements UserService {
         this.sysRoleMapper = sysRoleMapper;
         this.sysRolePermissionMapper = sysRolePermissionMapper;
         this.sysPermissionMapper = sysPermissionMapper;
+        this.sysTenantMapper = sysTenantMapper;
         this.redisTemplate = redisTemplate;
         this.passwordUtil = passwordUtil;
         this.jwtUtil = jwtUtil;
@@ -172,21 +177,33 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponseVO login(LoginRequestVO vo, HttpServletRequest request) {
-        if (vo == null || vo.getUserAccount() == null || vo.getUserPwd() == null) {
+        if (vo == null || vo.getUserAccount() == null || vo.getUserPwd() == null
+                || vo.getUserAccount().trim().isEmpty()) {
             throw new BusinessException(400, "账号或密码不能为空");
         }
 
         SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getUserAccount, vo.getUserAccount())
-                        .last("LIMIT 1")
-        );
+                        .last("LIMIT 1"));
         if (user == null) {
             throw new BusinessException(400, "账号或密码错误");
         }
 
         if (user.getUserStatus() != null && user.getUserStatus() == 0) {
             throw new BusinessException(400, "账号已禁用");
+        }
+
+        // PRD 第7.1节：租户到期冻结，全员禁止登录（admin 类型用户豁免，便于平台侧运维）
+        String tenantId = "TENANT_DEFAULT";
+        SysTenant tenant = sysTenantMapper.selectById(tenantId);
+        if (tenant != null && !"admin".equalsIgnoreCase(user.getUserType())) {
+            if (tenant.getTenantStatus() != null && tenant.getTenantStatus() == 0) {
+                throw new BusinessException(403, "租户已冻结，请续费后登录");
+            }
+            if (tenant.getValidEnd() != null && tenant.getValidEnd().isBefore(java.time.LocalDateTime.now())) {
+                throw new BusinessException(403, "租户服务已到期，请续费后登录");
+            }
         }
 
         if (!passwordUtil.matches(vo.getUserPwd(), user.getUserPwdBcrypt())) {
@@ -206,6 +223,16 @@ public class UserServiceImpl implements UserService {
                 .permCodes(permCodes)
                 .loginTime(System.currentTimeMillis())
                 .build();
+
+        // 登录成功后绑定 UserContext，确保 AuditLogAspect 能获取用户信息
+        UserContext.setUserGuid(userInfo.getUserGuid());
+        UserContext.setUserAccount(userInfo.getUserAccount());
+        UserContext.setUserName(userInfo.getUserName());
+        UserContext.setUserType(userInfo.getUserType());
+        UserContext.setRoles(userInfo.getRoles());
+        UserContext.setPermCodes(userInfo.getPermCodes());
+        // 默认租户（单租户场景下）
+        UserContext.setTenantId("TENANT_DEFAULT");
 
         LoginResponseVO response = new LoginResponseVO();
         response.setUserGuid(user.getUserGuid());

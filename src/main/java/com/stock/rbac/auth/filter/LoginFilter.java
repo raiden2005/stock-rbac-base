@@ -122,6 +122,7 @@ public class LoginFilter implements Filter {
         UserContext.setUserType(user.getUserType());
         UserContext.setRoles(user.getRoles());
         UserContext.setPermCodes(user.getPermCodes());
+        UserContext.setTenantId("TENANT_DEFAULT");
     }
 
     private void writeJsonResponse(HttpServletResponse resp, int code, String msg) throws IOException {

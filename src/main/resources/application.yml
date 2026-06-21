@@ -23,20 +23,6 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      password:
-      database: 0
-      timeout: 5000ms
-      lettuce:
-        pool:
-          min-idle: 5
-          max-idle: 20
-          max-active: 30
-          max-wait: 3000ms
-
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai

@@ -3,11 +3,18 @@ package com.stock.rbac;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        RedisAutoConfiguration.class,
+        RedisRepositoriesAutoConfiguration.class
+})
+@EnableScheduling
 @EnableConfigurationProperties(com.stock.rbac.util.RbacConfigUtil.class)
 @MapperScan(basePackages = "com.stock.rbac.mapper")
 @ComponentScan(
